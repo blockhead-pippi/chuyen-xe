@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Ghi nhớ số chuyến xe</title>
+<meta charset="UTF-8">
+<style>
+  table {
+    border-collapse: collapse;
+    width: 50%;
+    margin-bottom: 20px;
+  }
+  th, td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: left;
+  }
+  td.so-chuyen {
+    width: 60px; 
+  }
+</style>
+</head>
+<body>
+<h1>Ghi nhớ số chuyến xe</h1>
+
+<label for="inputNgayThang">Ngày tháng:</label>
+<input type="date" id="inputNgayThang">
+<label for="inputSoChuyen">Số chuyến:</label>
+<input type="number" id="inputSoChuyen">
+
+<br>
+<label for="selectBienSoXe">Biển số xe:</label>
+<select id="selectBienSoXe">
+</select>
+<input type="file" id="inputFileBienSoXe" accept=".txt" style="display: none;">
+<button onclick="document.getElementById('inputFileBienSoXe').click()">Nhập biển số xe</button>
+
+<br>
+<label for="selectTenTaiXe">Tên tài xế:</label>
+<select id="selectTenTaiXe">
+</select>
+<input type="file" id="inputFileTenTaiXe" accept=".txt" style="display: none;">
+<button onclick="document.getElementById('inputFileTenTaiXe').click()">Nhập tên tài xế</button>
+
+<br>
+<button onclick="themChuyenXe()">Thêm chuyến xe</button>
+<button onclick="luuDuLieu()">Lưu dữ liệu</button>
+<input type="file" id="inputFileDuLieu" accept=".txt" style="display: none;">
+<button onclick="document.getElementById('inputFileDuLieu').click()">Nhập dữ liệu chuyến xe</button>
+
+<h2>Danh sách chuyến xe</h2>
+<table id="bangChuyenXe">
+  <thead>
+    <tr>
+      <th>Ngày tháng</th>
+      <th>Số chuyến</th>
+      <th>Biển số xe</th>
+      <th>Tên tài xế</th>
+      <th>Xóa</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<h2>Thống kê theo tháng</h2>
+<table id="bangThongKeThang">
+  <thead>
+    <tr>
+      <th>Tháng</th>
+      <th>Tổng số chuyến</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<h2>Thống kê theo xe</h2>
+<table id="bangThongKeXe">
+  <thead>
+    <tr>
+      <th>Biển số xe</th>
+      <th>Số lần đi</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<h2>Thống kê theo tài xế</h2>
+<table id="bangThongKeTaiXe">
+  <thead>
+    <tr>
+      <th>Tên tài xế</th>
+      <th>Số lần đi</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<script>
+  function themChuyenXe() {
+    var ngayThang = document.getElementById("inputNgayThang").value;
+    var soChuyen = parseInt(document.getElementById("inputSoChuyen").value) || 0;
+    var bienSoXe = document.getElementById("selectBienSoXe").value;
+    var tenTaiXe = document.getElementById("selectTenTaiXe").value;
+    var ngayThangFormatted = formatDate(ngayThang);
+
+    var table = document.getElementById("bangChuyenXe").getElementsByTagName('tbody')[0];
+    // Sử dụng key duy nhất cho localStorage
+    var rowId = "chuyenxe_" + ngayThangFormatted + bienSoXe + tenTaiXe; 
+    var rowNgayThang = document.getElementById(rowId);
+
+    if (rowNgayThang) {
+      // Nếu đã tồn tại, cập nhật số chuyến
+      var cellSoChuyen = rowNgayThang.cells[1];
+      cellSoChuyen.textContent = soChuyen;
+      localStorage.setItem(rowId, JSON.stringify({
+        ngayThang: ngayThangFormatted,
+        soChuyen: soChuyen,
+        bienSoXe: bienSoXe,
+        taiXe: tenTaiXe
+      }));
+    } else {
+      // Nếu chưa tồn tại, tạo row mới
+      var row = table.insertRow();
+      row.id = rowId; 
+      var cell1 = row.insertCell();
+      var cell2 = row.insertCell();
+      var cell3 = row.insertCell();
+      var cell4 = row.insertCell();
+      var cell5 = row.insertCell();
+
+      cell1.innerHTML = ngayThangFormatted;
+      cell2.innerHTML = `<span class="so-chuyen">${soChuyen}</span>`;
+      cell2.contentEditable = true;
+      cell2.classList.add("so-chuyen");
+      cell3.innerHTML = bienSoXe;
+      cell4.innerHTML = tenTaiXe;
+      cell5.innerHTML = `<button onclick="xoaNgayThang('${rowId}')">Xóa</button>`;
+
+      localStorage.setItem(rowId, JSON.stringify({
+        ngayThang: ngayThangFormatted,
+        soChuyen: soChuyen,
+        bienSoXe: bienSoXe,
+        taiXe: tenTaiXe
+      }));
+    }
+
+    document.getElementById("inputNgayThang").value = "";
+    document.getElementById("inputSoChuyen").value = "";
+    capNhatThongKe(); 
+  }
+
+  function xoaNgayThang(rowId) {
+    localStorage.removeItem(rowId);
+    var rowNgayThang = document.getElementById(rowId);
+    rowNgayThang.remove();
+    capNhatThongKe();
+  }
+
+  function hienThiDanhSach() {
+    var table = document.getElementById("bangChuyenXe").getElementsByTagName('tbody')[0];
+    table.innerHTML = "";
+
+    // Lặp qua tất cả các mục trong localStorage
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      // Kiểm tra xem key có bắt đầu bằng "chuyenxe_" hay không
+      if (key.startsWith("chuyenxe_")) {
+        var data = JSON.parse(localStorage.getItem(key));
+
+        var row = table.insertRow();
+        row.id = key; 
+        var cell1 = row.insertCell();
+        var cell2 = row.insertCell();
+        var cell3 = row.insertCell();
+        var cell4 = row.insertCell();
+        var cell5 = row.insertCell(); 
+
+        cell1.innerHTML = data.ngayThang;
+        cell2.innerHTML = `<span class="so-chuyen">${data.soChuyen}</span>`;
+        cell2.contentEditable = true;
+        cell2.classList.add("so-chuyen");
+        cell3.innerHTML = data.bienSoXe;
+        cell4.innerHTML = data.taiXe;
+        cell5.innerHTML = `<button onclick="xoaNgayThang('${key}')">Xóa</button>`; 
+      }
+    }
+  }
+
+  document.getElementById("bangChuyenXe").addEventListener("input", function(event) {
+    if (event.target.classList.contains("so-chuyen")) {
+      var row = event.target.parentNode;
+      var key = row.id; 
+      var soChuyen = event.target.textContent;
+
+      var data = JSON.parse(localStorage.getItem(key));
+      data.soChuyen = parseInt(soChuyen) || 0; 
+      localStorage.setItem(key, JSON.stringify(data));
+
+      capNhatThongKe(); 
+    }
+  });
+
+  function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [day, month, year].join('-');
+  }
+
+ function capNhatThongKe() {
+    var tongChuyenTheoThang = {};
+    var soLanDiTheoXe = {};
+    var soLanDiTheoTaiXe = {};
+
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      // Chỉ xử lý các mục có key bắt đầu bằng "chuyenxe_"
+      if (key.startsWith("chuyenxe_")) {
+        var data = JSON.parse(localStorage.getItem(key));
+        var thang = data.ngayThang.substring(3, 10);
+        var bienSoXe = data.bienSoXe;
+        var taiXe = data.taiXe;
+
+        if (!tongChuyenTheoThang[thang]) {
+          tongChuyenTheoThang[thang] = 0;
+        }
+        tongChuyenTheoThang[thang] += data.soChuyen;
+
+        if (!soLanDiTheoXe[bienSoXe]) {
+          soLanDiTheoXe[bienSoXe] = 0;
+        }
+        soLanDiTheoXe[bienSoXe]++;
+
+        if (!soLanDiTheoTaiXe[taiXe]) {
+          soLanDiTheoTaiXe[taiXe] = 0;
+        }
+        soLanDiTheoTaiXe[taiXe]++;
+      }
+    }
+
+    hienThiThongKeTheoThang(tongChuyenTheoThang);
+    hienThiThongKeTheoXe(soLanDiTheoXe);
+    hienThiThongKeTheoTaiXe(soLanDiTheoTaiXe);
+  }
+
+
+  function hienThiThongKeTheoThang(data) {
+    var table = document.getElementById("bangThongKeThang").getElementsByTagName('tbody')[0];
+    table.innerHTML = ""; 
+    for (var thang in data) {
+      var row = table.insertRow();
+      var cell1 = row.insertCell();
+      var cell2 = row.insertCell();
+      cell1.innerHTML = thang;
+      cell2.innerHTML = data[thang];
+    }
+  }
+
+  function hienThiThongKeTheoXe(data) {
+    var table = document.getElementById("bangThongKeXe").getElementsByTagName('tbody')[0];
+    table.innerHTML = ""; 
+    for (var bienSoXe in data) {
+      var row = table.insertRow();
+      var cell1 = row.insertCell();
+      var cell2 = row.insertCell();
+      cell1.innerHTML = bienSoXe;
+      cell2.innerHTML = data[bienSoXe];
+    }
+  }
+
+  function hienThiThongKeTheoTaiXe(data) {
+    var table = document.getElementById("bangThongKeTaiXe").getElementsByTagName('tbody')[0];
+    table.innerHTML = "";
+    for (var taiXe in data) {
+      var row = table.insertRow();
+      var cell1 = row.insertCell();
+      var cell2 = row.insertCell();
+      cell1.innerHTML = taiXe;
+      cell2.innerHTML = data[taiXe];
+    }
+  }
+
+  function luuDuLieu() {
+    var duLieu = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      // Chỉ lưu các mục có key bắt đầu bằng "chuyenxe_"
+      if (key.startsWith("chuyenxe_")) {
+        var data = JSON.parse(localStorage.getItem(key));
+        duLieu.push(data);
+      }
+    }
+    var duLieuJSON = JSON.stringify(duLieu, null, 2); 
+    var blob = new Blob([duLieuJSON], { type: "text/plain;charset=utf-8" });
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "du_lieu_chuyen_xe.txt";
+    link.click();
+  }
+
+
+  function themVaoDanhSach(localStorageKey, giaTriMoi) {
+    var danhSach = localStorage.getItem(localStorageKey);
+    if (danhSach) {
+      danhSach = JSON.parse(danhSach);
+    } else {
+      danhSach = [];
+    }
+    if (!danhSach.includes(giaTriMoi)) {
+      danhSach.push(giaTriMoi);
+      localStorage.setItem(localStorageKey, JSON.stringify(danhSach));
+      capNhatSelectOptions(localStorageKey); 
+    }
+  }
+
+  function capNhatSelectOptions(localStorageKey) {
+    var selectElement = document.getElementById(localStorageKey === "danhSachBienSoXe" ? "selectBienSoXe" : "selectTenTaiXe");
+    selectElement.innerHTML = ''; 
+    var danhSach = localStorage.getItem(localStorageKey);
+    if (danhSach) {
+      danhSach = JSON.parse(danhSach);
+      danhSach.forEach(function(item) {
+        var option = document.createElement("option");
+        option.value = item;
+        option.text = item;
+        selectElement.add(option);
+      });
+    }
+  }
+
+  // Xử lý sự kiện nhập file biển số xe
+  document.getElementById('inputFileBienSoXe').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var danhSachBienSoXe = e.target.result.split('\n').map(function(item) {
+          return item.trim(); 
+        }).filter(function(item) { 
+          return item; 
+        });
+        danhSachBienSoXe.forEach(function(bienSoXe) {
+          themVaoDanhSach("danhSachBienSoXe", bienSoXe);
+        });
+        capNhatSelectOptions("danhSachBienSoXe"); 
+      }
+      reader.readAsText(file);
+    }
+  });
+
+  // Xử lý sự kiện nhập file tên tài xế
+  document.getElementById('inputFileTenTaiXe').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var danhSachTenTaiXe = e.target.result.split('\n').map(function(item) {
+          return item.trim(); 
+        }).filter(function(item) {
+          return item; 
+        });
+        danhSachTenTaiXe.forEach(function(tenTaiXe) {
+          themVaoDanhSach("danhSachTenTaiXe", tenTaiXe);
+        });
+        capNhatSelectOptions("danhSachTenTaiXe"); 
+      }
+      reader.readAsText(file);
+    }
+  });
+
+  // Xử lý sự kiện nhập file dữ liệu chuyến xe
+  document.getElementById('inputFileDuLieu').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var duLieu = JSON.parse(e.target.result);
+        duLieu.forEach(function(item) {
+          // Tạo key duy nhất cho mỗi chuyến xe
+          var key = "chuyenxe_" + item.ngayThang + item.bienSoXe + item.taiXe; 
+          localStorage.setItem(key, JSON.stringify(item));
+          themVaoDanhSach("danhSachBienSoXe", item.bienSoXe);
+          themVaoDanhSach("danhSachTenTaiXe", item.taiXe);
+        });
+        hienThiDanhSach();
+        capNhatThongKe(); 
+      }
+      reader.readAsText(file);
+    }
+  });
+
+  
+  hienThiDanhSach();
+  capNhatThongKe();
+  capNhatSelectOptions("danhSachBienSoXe"); 
+  capNhatSelectOptions("danhSachTenTaiXe"); 
+</script>
+</body>
+</html>
