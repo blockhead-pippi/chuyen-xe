@@ -41,6 +41,8 @@
 
         <label for="soChuyen">Số chuyến:</label>
         <input type="number" id="soChuyen"><br><br>
+        <label for="soTienChuyen">Số tiền 1 chuyến (VNĐ):</label>
+        <input type="number" id="soTienChuyen" placeholder="Ví dụ: 300000" oninput="tinhThongKe()"><br><br>
 
         <button onclick="themDuLieu()">Thêm</button>
 
@@ -62,6 +64,7 @@
             <tr>
                 <th>Tháng</th>
                 <th>Tổng số chuyến</th>
+                <th>Lương dự kiến (VNĐ)</th> <!-- Cột mới thêm -->
             </tr>
         </table>
 
@@ -182,7 +185,12 @@
             }
             
             // Hàm để tính toán và hiển thị thống kê theo tháng dương lịch (từ ngày 1 đến cuối tháng)
+            // Hàm để tính toán và hiển thị thống kê theo tháng dương lịch
             function tinhThongKe() {
+                // Lấy đơn giá 1 chuyến từ ô nhập liệu, nếu trống thì mặc định là 0
+                const soTienInput = document.getElementById("soTienChuyen").value;
+                const tienMotChuyen = parseInt(soTienInput) || 0;
+
                 const thongKe = {};
                 duLieu.forEach(item => {
                     const date = new Date(item.ngayThang);
@@ -194,8 +202,7 @@
                     let year = date.getFullYear();
                     let month = date.getMonth(); // 0 cho tháng 1, 11 cho tháng 12
             
-                    // Chu kỳ mới: Tính theo đúng tháng và năm của ngày nhập
-                    // Định dạng chu kỳ là MM/YYYY
+                    // Chu kỳ: Tính theo đúng tháng và năm
                     const chuKy = `${(month + 1).toString().padStart(2, '0')}/${year}`;
                     thongKe[chuKy] = (thongKe[chuKy] || 0) + item.soChuyen;
                 });
@@ -212,7 +219,13 @@
                  sortedChuKys.forEach(chuKy => {
                     const row = table.insertRow();
                     row.insertCell().textContent = chuKy;
-                    row.insertCell().textContent = thongKe[chuKy];
+                    
+                    const tongSoChuyen = thongKe[chuKy];
+                    row.insertCell().textContent = tongSoChuyen;
+
+                    // Tính toán lương và định dạng theo chuẩn tiền tệ Việt Nam (có dấu chấm phân cách hàng nghìn)
+                    const luongDuKien = tongSoChuyen * tienMotChuyen;
+                    row.insertCell().textContent = luongDuKien.toLocaleString('vi-VN');
                 });
             }
             
