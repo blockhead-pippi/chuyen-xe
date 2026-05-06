@@ -181,7 +181,7 @@
                 }
             }
             
-            // Hàm để tính toán và hiển thị thống kê theo tháng
+            // Hàm để tính toán và hiển thị thống kê theo tháng dương lịch (từ ngày 1 đến cuối tháng)
             function tinhThongKe() {
                 const thongKe = {};
                 duLieu.forEach(item => {
@@ -193,22 +193,10 @@
                      }
                     let year = date.getFullYear();
                     let month = date.getMonth(); // 0 cho tháng 1, 11 cho tháng 12
-                    let day = date.getDate();
             
-                    let cycleMonth = month;
-                    let cycleYear = year;
-            
-                    // Nếu ngày từ 26 trở đi, nó thuộc chu kỳ của tháng tiếp theo
-                    if (day >= 26) {
-                        cycleMonth = month + 1;
-                        if (cycleMonth === 12) { // Nếu tháng hiện tại là tháng 12 (11) và ngày từ 26 trở đi
-                            cycleMonth = 0; // Chu kỳ tiếp theo là tháng 1
-                            cycleYear++;    // Chu kỳ tiếp theo là năm tiếp theo
-                        }
-                    }
-            
-                     // Định dạng chu kỳ là YYYY/MM
-                    const chuKy = `${(cycleMonth + 1).toString().padStart(2, '0')}/${cycleYear}`;
+                    // Chu kỳ mới: Tính theo đúng tháng và năm của ngày nhập
+                    // Định dạng chu kỳ là MM/YYYY
+                    const chuKy = `${(month + 1).toString().padStart(2, '0')}/${year}`;
                     thongKe[chuKy] = (thongKe[chuKy] || 0) + item.soChuyen;
                 });
             
@@ -220,7 +208,6 @@
             
                  // Sắp xếp các chu kỳ theo thứ tự thời gian trước khi hiển thị
                  const sortedChuKys = Object.keys(thongKe).sort();
-            
             
                  sortedChuKys.forEach(chuKy => {
                     const row = table.insertRow();
