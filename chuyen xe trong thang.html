@@ -1,409 +1,365 @@
 <!DOCTYPE html>
-<html>
-<head>
-<title>Ghi nhớ số chuyến xe</title>
-<meta charset="UTF-8">
-<style>
-  table {
-    border-collapse: collapse;
-    width: 50%;
-    margin-bottom: 20px;
-  }
-  th, td {
-    border: 1px solid black;
-    padding: 8px;
-    text-align: left;
-  }
-  td.so-chuyen {
-    width: 60px; 
-  }
-</style>
-</head>
-<body>
-<h1>Ghi nhớ số chuyến xe</h1>
+<html lang="vi">
 
-<label for="inputNgayThang">Ngày tháng:</label>
-<input type="date" id="inputNgayThang">
-<label for="inputSoChuyen">Số chuyến:</label>
-<input type="number" id="inputSoChuyen">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dữ liệu chuyến ver 2.1</title>
+        <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            
+            th, td {
+                border: 1px solid black;
+                padding: 8px;
+                text-align: center;
+            }
+            
+            /* Kiểu dáng cho các nút */
+            button {
+                margin-right: 10px;
+                padding: 8px 15px;
+                cursor: pointer;
+            }
+            
+            /* Ẩn input chọn tệp */
+            #importFile {
+                display: none;
+            }
+        </style>
+    </head>
 
-<br>
-<label for="selectBienSoXe">Biển số xe:</label>
-<select id="selectBienSoXe">
-</select>
-<input type="file" id="inputFileBienSoXe" accept=".txt" style="display: none;">
-<button onclick="document.getElementById('inputFileBienSoXe').click()">Nhập biển số xe</button>
+    <body>
 
-<br>
-<label for="selectTenTaiXe">Tên tài xế:</label>
-<select id="selectTenTaiXe">
-</select>
-<input type="file" id="inputFileTenTaiXe" accept=".txt" style="display: none;">
-<button onclick="document.getElementById('inputFileTenTaiXe').click()">Nhập tên tài xế</button>
+        <h1>Số chuyến</h1>
 
-<br>
-<button onclick="themChuyenXe()">Thêm chuyến xe</button>
-<button onclick="luuDuLieu()">Lưu dữ liệu</button>
-<input type="file" id="inputFileDuLieu" accept=".txt" style="display: none;">
-<button onclick="document.getElementById('inputFileDuLieu').click()">Nhập dữ liệu chuyến xe</button>
+        <label for="ngayThang">Ngày tháng:</label>
+        <input type="date" id="ngayThang"><br><br>
 
-<h2>Danh sách chuyến xe</h2>
-<table id="bangChuyenXe">
-  <thead>
-    <tr>
-      <th>Ngày tháng</th>
-      <th>Số chuyến</th>
-      <th>Biển số xe</th>
-      <th>Tên tài xế</th>
-      <th>Xóa</th>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
-</table>
+        <label for="soChuyen">Số chuyến:</label>
+        <input type="number" id="soChuyen"><br><br>
 
-<h2>Thống kê theo tháng</h2>
-<table id="bangThongKeThang">
-  <thead>
-    <tr>
-      <th>Tháng</th>
-      <th>Tổng số chuyến</th>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
-</table>
+        <button onclick="themDuLieu()">Thêm</button>
 
-<h2>Thống kê theo xe</h2>
-<table id="bangThongKeXe">
-  <thead>
-    <tr>
-      <th>Biển số xe</th>
-      <th>Số lần đi</th>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
-</table>
+        <button onclick="xuatDuLieu()">Xuất dữ liệu</button>
+        <button onclick="document.getElementById('importFile').click()">Nhập dữ liệu</button>
+        <button onclick="xoaToanBoDuLieu()">Xoá toàn bộ dữ liệu</button>
+            <input type="file" id="importFile" accept=".txt,.json">
+        <h2>Dữ liệu chuyến đi</h2>
+        <table id="duLieuTable">
+            <tr>
+                <th>Ngày tháng</th>
+                <th>Số chuyến</th>
+                <th>Xoá</th>
+            </tr>
+        </table>
 
-<h2>Thống kê theo tài xế</h2>
-<table id="bangThongKeTaiXe">
-  <thead>
-    <tr>
-      <th>Tên tài xế</th>
-      <th>Số lần đi</th>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
-</table>
+        <h2>Thống kê theo tháng</h2>
+        <table id="thongKeTable">
+            <tr>
+                <th>Tháng</th>
+                <th>Tổng số chuyến</th>
+            </tr>
+        </table>
 
-<script>
-  function themChuyenXe() {
-    var ngayThang = document.getElementById("inputNgayThang").value;
-    var soChuyen = parseInt(document.getElementById("inputSoChuyen").value) || 0;
-    var bienSoXe = document.getElementById("selectBienSoXe").value;
-    var tenTaiXe = document.getElementById("selectTenTaiXe").value;
-    var ngayThangFormatted = formatDate(ngayThang);
+        <script>
+            // Mảng để lưu trữ dữ liệu chuyến đi
+            let duLieu = [];
+            // Khóa để lưu trữ dữ liệu trong localStorage
+            const storageKey = 'chuyenDiData';
+            
+            // Hàm để tải dữ liệu từ localStorage
+            function loadDuLieu() {
+                const storedDuLieu = localStorage.getItem(storageKey);
+                if (storedDuLieu) {
+                    try {
+                        // Cố gắng phân tích cú pháp dữ liệu đã lưu
+                        duLieu = JSON.parse(storedDuLieu);
+                        // Kiểm tra cơ bản để đảm bảo đây là một mảng và chứa các đối tượng
+                        if (!Array.isArray(duLieu)) {
+                             console.error("Dữ liệu lưu trữ không phải là mảng.");
+                             duLieu = []; // Đặt lại nếu không hợp lệ
+                             saveDuLieu(); // Xóa dữ liệu không hợp lệ
+                             return;
+                        }
+                         // Đảm bảo 'soChuyen' được coi là số sau khi tải
+                        duLieu.forEach(item => {
+                            if (typeof item.soChuyen !== 'number') {
+                                item.soChuyen = parseInt(item.soChuyen) || 0; // Phân tích, mặc định là 0 nếu không hợp lệ
+                            }
+                        });
+            
+                        hienThiDuLieu();
+                        tinhThongKe();
+                    } catch (e) {
+                        console.error("Lỗi khi đọc dữ liệu từ localStorage:", e);
+                        duLieu = []; // Đặt lại nếu phân tích cú pháp thất bại
+                        saveDuLieu(); // Xóa dữ liệu lỗi
+                    }
+                }
+            }
+            
+            // Hàm để lưu dữ liệu vào localStorage
+            function saveDuLieu() {
+                try {
+                     localStorage.setItem(storageKey, JSON.stringify(duLieu));
+                } catch (e) {
+                    console.error("Lỗi khi lưu dữ liệu vào localStorage:", e);
+                    alert("Không thể lưu dữ liệu. Bộ nhớ trình duyệt có thể đã đầy hoặc bị hạn chế.");
+                }
+            }
+            
+            // Hàm để thêm dữ liệu mới
+            function themDuLieu() {
+                const ngayThang = document.getElementById("ngayThang").value;
+                const soChuyenInput = document.getElementById("soChuyen").value;
+                const soChuyen = parseInt(soChuyenInput);
+            
+                // Kiểm tra xem ngày đã được chọn và số có hợp lệ không
+                if (ngayThang && !isNaN(soChuyen) && soChuyenInput.trim() !== '') {
+                    // Kiểm tra xem đã có mục nhập cho ngày này chưa
+                    const existingIndex = duLieu.findIndex(item => item.ngayThang === ngayThang);
+            
+                    if (existingIndex > -1) {
+                        // Cập nhật mục nhập hiện có
+                        duLieu[existingIndex].soChuyen = soChuyen;
+                    } else {
+                        // Thêm mục nhập mới
+                        duLieu.push({ ngayThang, soChuyen });
+                         // Tùy chọn: Sắp xếp theo ngày sau khi thêm
+                        duLieu.sort((a, b) => new Date(a.ngayThang) - new Date(b.ngayThang));
+                    }
+            
+                    hienThiDuLieu();
+                    tinhThongKe();
+                    saveDuLieu();
+            
+                    // Xóa các trường nhập sau khi thêm
+                    document.getElementById("ngayThang").value = '';
+                    document.getElementById("soChuyen").value = '';
+            
+                } else {
+                    alert("Xin chọn ngày tháng vào số chuyến.");
+                }
+            }
+            
+            // Hàm để hiển thị dữ liệu trong bảng
+            function hienThiDuLieu() {
+                const table = document.getElementById("duLieuTable");
+                // Logic xóa hàng đã sửa: giữ hàng tiêu đề
+                while (table.rows.length > 1) {
+                    table.deleteRow(1);
+                }
+            
+                duLieu.forEach((item, index) => {
+                    const row = table.insertRow();
+                    const date = new Date(item.ngayThang);
+                     // Đảm bảo ngày hợp lệ trước khi định dạng
+                    const formattedDate = isNaN(date.getTime()) ? 'Ngày không hợp lệ' : `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+            
+                    row.insertCell().textContent = formattedDate;
+                    row.insertCell().textContent = item.soChuyen;
+            
+                    const deleteCell = row.insertCell();
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = "Xoá";
+                    deleteButton.onclick = () => xoaDuLieu(index);
+                    deleteCell.appendChild(deleteButton);
+                });
+            }
+            
+            // Hàm để xóa một mục dữ liệu
+            function xoaDuLieu(index) {
+                if (confirm("Bạn có chắc chắn muốn xoá mục này không?")) {
+                    duLieu.splice(index, 1);
+                    hienThiDuLieu();
+                    tinhThongKe();
+                    saveDuLieu();
+                }
+            }
+            
+            // Hàm để tính toán và hiển thị thống kê theo tháng
+            function tinhThongKe() {
+                const thongKe = {};
+                duLieu.forEach(item => {
+                    const date = new Date(item.ngayThang);
+                     // Bỏ qua các ngày không hợp lệ
+                    if (isNaN(date.getTime())) {
+                         console.warn("Bỏ qua ngày không hợp lệ trong thống kê:", item.ngayThang);
+                         return;
+                     }
+                    let year = date.getFullYear();
+                    let month = date.getMonth(); // 0 cho tháng 1, 11 cho tháng 12
+                    let day = date.getDate();
+            
+                    let cycleMonth = month;
+                    let cycleYear = year;
+            
+                    // Nếu ngày từ 26 trở đi, nó thuộc chu kỳ của tháng tiếp theo
+                    if (day >= 26) {
+                        cycleMonth = month + 1;
+                        if (cycleMonth === 12) { // Nếu tháng hiện tại là tháng 12 (11) và ngày từ 26 trở đi
+                            cycleMonth = 0; // Chu kỳ tiếp theo là tháng 1
+                            cycleYear++;    // Chu kỳ tiếp theo là năm tiếp theo
+                        }
+                    }
+            
+                     // Định dạng chu kỳ là YYYY/MM
+                    const chuKy = `${(cycleMonth + 1).toString().padStart(2, '0')}/${cycleYear}`;
+                    thongKe[chuKy] = (thongKe[chuKy] || 0) + item.soChuyen;
+                });
+            
+                const table = document.getElementById("thongKeTable");
+                // Xóa các hàng trước đó, giữ hàng tiêu đề
+                while (table.rows.length > 1) {
+                     table.deleteRow(1);
+                }
+            
+                 // Sắp xếp các chu kỳ theo thứ tự thời gian trước khi hiển thị
+                 const sortedChuKys = Object.keys(thongKe).sort();
+            
+            
+                 sortedChuKys.forEach(chuKy => {
+                    const row = table.insertRow();
+                    row.insertCell().textContent = chuKy;
+                    row.insertCell().textContent = thongKe[chuKy];
+                });
+            }
+            
+            // --- Các hàm mới để nhập/xuất dữ liệu ---
+            
+            // Hàm để xuất dữ liệu ra tệp văn bản
+            function xuatDuLieu() {
+                if (duLieu.length === 0) {
+                    alert("Không có dữ liệu để xuất.");
+                    return;
+                }
+            
+                // Chuyển đổi mảng dữ liệu thành chuỗi JSON
+                const dataString = JSON.stringify(duLieu, null, 2); // null, 2 để định dạng đẹp
+            
+                // Tạo một Blob từ chuỗi
+                const blob = new Blob([dataString], { type: 'text/plain' });
+            
+                // Tạo một phần tử liên kết
+                const link = document.createElement('a');
+            
+                // Tạo URL cho blob
+                link.href = URL.createObjectURL(blob);
+            
+                // Đặt tên tệp để tải xuống (ví dụ: chuyen_di_data_YYYYMMDD.txt)
+                const today = new Date();
+                const dateString = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                link.download = `chuyen_di_data_${dateString}.txt`;
+            
+                // Thêm liên kết vào body, nhấp vào nó và loại bỏ nó
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            
+                // Xóa URL đối tượng
+                URL.revokeObjectURL(link.href);
+            }
+            
+            // Trình lắng nghe sự kiện cho input tệp ẩn
+            document.getElementById('importFile').addEventListener('change', nhapDuLieu);
+            
+            // Hàm để nhập dữ liệu từ tệp văn bản
+            function nhapDuLieu(event) {
+                const file = event.target.files[0];
+            
+                if (!file) {
+                    return; // Không có tệp nào được chọn
+                }
+            
+                const reader = new FileReader();
+            
+                reader.onload = function(e) {
+                    const fileContent = e.target.result;
+            
+                    try {
+                        // Cố gắng phân tích cú pháp nội dung JSON
+                        const importedData = JSON.parse(fileContent);
+            
+                        // Xác thực cơ bản cấu trúc dữ liệu được nhập
+                        if (!Array.isArray(importedData)) {
+                            alert("Chỉ nhập số.");
+                            return;
+                        }
+            
+                        // Xác thực thêm: kiểm tra xem các mục có các thuộc tính mong đợi không
+                        const isValid = importedData.every(item =>
+                            item.hasOwnProperty('ngayThang') &&
+                            item.hasOwnProperty('soChuyen') &&
+                            typeof item.ngayThang === 'string' &&
+                            (typeof item.soChuyen === 'number' || (typeof item.soChuyen === 'string' && !isNaN(parseInt(item.soChuyen)))) // Chấp nhận số hoặc chuỗi có thể phân tích thành số
+                        );
+            
+                        if (!isValid) {
+                             alert("Sai định dạng file.");
+                             return;
+                        }
+            
+                         // Chuyển đổi soChuyen thành số cho tất cả các mục được nhập
+                        const cleanedData = importedData.map(item => ({
+                            ngayThang: item.ngayThang,
+                            soChuyen: parseInt(item.soChuyen) || 0 // Đảm bảo đó là một số, mặc định là 0 nếu phân tích thất bại
+                        }));
+            
+            
+                        // Thay thế dữ liệu hiện tại bằng dữ liệu được nhập
+                        duLieu = cleanedData;
+            
+                        // Tùy chọn: Sắp xếp dữ liệu được nhập theo ngày
+                         duLieu.sort((a, b) => new Date(a.ngayThang) - new Date(b.ngayThang));
+            
+            
+                        // Cập nhật hiển thị, thống kê và localStorage
+                        hienThiDuLieu();
+                        tinhThongKe();
+                        saveDuLieu();
+            
+                        alert("Dữ liệu đã được nhập thành công!");
+            
+                    } catch (error) {
+                        console.error("Lỗi khi xử lý tệp nhập:", error);
+                        alert("Lỗi khi đọc hoặc phân tích cú pháp tệp.");
+                    } finally {
+                        // Xóa giá trị của input tệp để có thể chọn lại cùng một tệp
+                        event.target.value = '';
+                    }
+                };
+            
+                // Đọc tệp dưới dạng văn bản
+                reader.readAsText(file);
+            }
+            
+            		// chức năng xóa toàn bộ dữ liệu đã nhập
+            function xoaToanBoDuLieu() {
+                if (confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu đã nhập chứ?")) {
+                    duLieu = []; // Xóa mảng dữ liệu
+                    hienThiDuLieu(); // Cập nhật bảng hiển thị
+                    tinhThongKe(); // Cập nhật bảng thống kê
+                    saveDuLieu(); // Lưu mảng trống vào localStorage
+                    alert("Đã xóa toàn bộ dữ liệu đã nhập");
+                }
+            }
+            
+            // Tải dữ liệu khi trang tải
+            loadDuLieu();
+            
+            // Thêm trình lắng nghe sự kiện vào các trường nhập biểu mẫu để có thể gửi bằng phím Enter (tùy chọn)
+            document.getElementById("soChuyen").addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault(); // Ngăn chặn gửi biểu mẫu mặc định
+                    themDuLieu();
+                }
+            });
+        </script>
 
-    var table = document.getElementById("bangChuyenXe").getElementsByTagName('tbody')[0];
-    // Sử dụng key duy nhất cho localStorage
-    var rowId = "chuyenxe_" + ngayThangFormatted + bienSoXe + tenTaiXe; 
-    var rowNgayThang = document.getElementById(rowId);
+    </body>
 
-    if (rowNgayThang) {
-      // Nếu đã tồn tại, cập nhật số chuyến
-      var cellSoChuyen = rowNgayThang.cells[1];
-      cellSoChuyen.textContent = soChuyen;
-      localStorage.setItem(rowId, JSON.stringify({
-        ngayThang: ngayThangFormatted,
-        soChuyen: soChuyen,
-        bienSoXe: bienSoXe,
-        taiXe: tenTaiXe
-      }));
-    } else {
-      // Nếu chưa tồn tại, tạo row mới
-      var row = table.insertRow();
-      row.id = rowId; 
-      var cell1 = row.insertCell();
-      var cell2 = row.insertCell();
-      var cell3 = row.insertCell();
-      var cell4 = row.insertCell();
-      var cell5 = row.insertCell();
-
-      cell1.innerHTML = ngayThangFormatted;
-      cell2.innerHTML = `<span class="so-chuyen">${soChuyen}</span>`;
-      cell2.contentEditable = true;
-      cell2.classList.add("so-chuyen");
-      cell3.innerHTML = bienSoXe;
-      cell4.innerHTML = tenTaiXe;
-      cell5.innerHTML = `<button onclick="xoaNgayThang('${rowId}')">Xóa</button>`;
-
-      localStorage.setItem(rowId, JSON.stringify({
-        ngayThang: ngayThangFormatted,
-        soChuyen: soChuyen,
-        bienSoXe: bienSoXe,
-        taiXe: tenTaiXe
-      }));
-    }
-
-    document.getElementById("inputNgayThang").value = "";
-    document.getElementById("inputSoChuyen").value = "";
-    capNhatThongKe(); 
-  }
-
-  function xoaNgayThang(rowId) {
-    localStorage.removeItem(rowId);
-    var rowNgayThang = document.getElementById(rowId);
-    rowNgayThang.remove();
-    capNhatThongKe();
-  }
-
-  function hienThiDanhSach() {
-    var table = document.getElementById("bangChuyenXe").getElementsByTagName('tbody')[0];
-    table.innerHTML = "";
-
-    // Lặp qua tất cả các mục trong localStorage
-    for (var i = 0; i < localStorage.length; i++) {
-      var key = localStorage.key(i);
-      // Kiểm tra xem key có bắt đầu bằng "chuyenxe_" hay không
-      if (key.startsWith("chuyenxe_")) {
-        var data = JSON.parse(localStorage.getItem(key));
-
-        var row = table.insertRow();
-        row.id = key; 
-        var cell1 = row.insertCell();
-        var cell2 = row.insertCell();
-        var cell3 = row.insertCell();
-        var cell4 = row.insertCell();
-        var cell5 = row.insertCell(); 
-
-        cell1.innerHTML = data.ngayThang;
-        cell2.innerHTML = `<span class="so-chuyen">${data.soChuyen}</span>`;
-        cell2.contentEditable = true;
-        cell2.classList.add("so-chuyen");
-        cell3.innerHTML = data.bienSoXe;
-        cell4.innerHTML = data.taiXe;
-        cell5.innerHTML = `<button onclick="xoaNgayThang('${key}')">Xóa</button>`; 
-      }
-    }
-  }
-
-  document.getElementById("bangChuyenXe").addEventListener("input", function(event) {
-    if (event.target.classList.contains("so-chuyen")) {
-      var row = event.target.parentNode;
-      var key = row.id; 
-      var soChuyen = event.target.textContent;
-
-      var data = JSON.parse(localStorage.getItem(key));
-      data.soChuyen = parseInt(soChuyen) || 0; 
-      localStorage.setItem(key, JSON.stringify(data));
-
-      capNhatThongKe(); 
-    }
-  });
-
-  function formatDate(date) {
-    var d = new Date(date),
-        month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
-
-    if (month.length < 2) 
-        month = '0' + month;
-    if (day.length < 2) 
-        day = '0' + day;
-
-    return [day, month, year].join('-');
-  }
-
- function capNhatThongKe() {
-    var tongChuyenTheoThang = {};
-    var soLanDiTheoXe = {};
-    var soLanDiTheoTaiXe = {};
-
-    for (var i = 0; i < localStorage.length; i++) {
-      var key = localStorage.key(i);
-      // Chỉ xử lý các mục có key bắt đầu bằng "chuyenxe_"
-      if (key.startsWith("chuyenxe_")) {
-        var data = JSON.parse(localStorage.getItem(key));
-        var thang = data.ngayThang.substring(3, 10);
-        var bienSoXe = data.bienSoXe;
-        var taiXe = data.taiXe;
-
-        if (!tongChuyenTheoThang[thang]) {
-          tongChuyenTheoThang[thang] = 0;
-        }
-        tongChuyenTheoThang[thang] += data.soChuyen;
-
-        if (!soLanDiTheoXe[bienSoXe]) {
-          soLanDiTheoXe[bienSoXe] = 0;
-        }
-        soLanDiTheoXe[bienSoXe]++;
-
-        if (!soLanDiTheoTaiXe[taiXe]) {
-          soLanDiTheoTaiXe[taiXe] = 0;
-        }
-        soLanDiTheoTaiXe[taiXe]++;
-      }
-    }
-
-    hienThiThongKeTheoThang(tongChuyenTheoThang);
-    hienThiThongKeTheoXe(soLanDiTheoXe);
-    hienThiThongKeTheoTaiXe(soLanDiTheoTaiXe);
-  }
-
-
-  function hienThiThongKeTheoThang(data) {
-    var table = document.getElementById("bangThongKeThang").getElementsByTagName('tbody')[0];
-    table.innerHTML = ""; 
-    for (var thang in data) {
-      var row = table.insertRow();
-      var cell1 = row.insertCell();
-      var cell2 = row.insertCell();
-      cell1.innerHTML = thang;
-      cell2.innerHTML = data[thang];
-    }
-  }
-
-  function hienThiThongKeTheoXe(data) {
-    var table = document.getElementById("bangThongKeXe").getElementsByTagName('tbody')[0];
-    table.innerHTML = ""; 
-    for (var bienSoXe in data) {
-      var row = table.insertRow();
-      var cell1 = row.insertCell();
-      var cell2 = row.insertCell();
-      cell1.innerHTML = bienSoXe;
-      cell2.innerHTML = data[bienSoXe];
-    }
-  }
-
-  function hienThiThongKeTheoTaiXe(data) {
-    var table = document.getElementById("bangThongKeTaiXe").getElementsByTagName('tbody')[0];
-    table.innerHTML = "";
-    for (var taiXe in data) {
-      var row = table.insertRow();
-      var cell1 = row.insertCell();
-      var cell2 = row.insertCell();
-      cell1.innerHTML = taiXe;
-      cell2.innerHTML = data[taiXe];
-    }
-  }
-
-  function luuDuLieu() {
-    var duLieu = [];
-    for (var i = 0; i < localStorage.length; i++) {
-      var key = localStorage.key(i);
-      // Chỉ lưu các mục có key bắt đầu bằng "chuyenxe_"
-      if (key.startsWith("chuyenxe_")) {
-        var data = JSON.parse(localStorage.getItem(key));
-        duLieu.push(data);
-      }
-    }
-    var duLieuJSON = JSON.stringify(duLieu, null, 2); 
-    var blob = new Blob([duLieuJSON], { type: "text/plain;charset=utf-8" });
-    var link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "du_lieu_chuyen_xe.txt";
-    link.click();
-  }
-
-
-  function themVaoDanhSach(localStorageKey, giaTriMoi) {
-    var danhSach = localStorage.getItem(localStorageKey);
-    if (danhSach) {
-      danhSach = JSON.parse(danhSach);
-    } else {
-      danhSach = [];
-    }
-    if (!danhSach.includes(giaTriMoi)) {
-      danhSach.push(giaTriMoi);
-      localStorage.setItem(localStorageKey, JSON.stringify(danhSach));
-      capNhatSelectOptions(localStorageKey); 
-    }
-  }
-
-  function capNhatSelectOptions(localStorageKey) {
-    var selectElement = document.getElementById(localStorageKey === "danhSachBienSoXe" ? "selectBienSoXe" : "selectTenTaiXe");
-    selectElement.innerHTML = ''; 
-    var danhSach = localStorage.getItem(localStorageKey);
-    if (danhSach) {
-      danhSach = JSON.parse(danhSach);
-      danhSach.forEach(function(item) {
-        var option = document.createElement("option");
-        option.value = item;
-        option.text = item;
-        selectElement.add(option);
-      });
-    }
-  }
-
-  // Xử lý sự kiện nhập file biển số xe
-  document.getElementById('inputFileBienSoXe').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (file) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var danhSachBienSoXe = e.target.result.split('\n').map(function(item) {
-          return item.trim(); 
-        }).filter(function(item) { 
-          return item; 
-        });
-        danhSachBienSoXe.forEach(function(bienSoXe) {
-          themVaoDanhSach("danhSachBienSoXe", bienSoXe);
-        });
-        capNhatSelectOptions("danhSachBienSoXe"); 
-      }
-      reader.readAsText(file);
-    }
-  });
-
-  // Xử lý sự kiện nhập file tên tài xế
-  document.getElementById('inputFileTenTaiXe').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (file) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var danhSachTenTaiXe = e.target.result.split('\n').map(function(item) {
-          return item.trim(); 
-        }).filter(function(item) {
-          return item; 
-        });
-        danhSachTenTaiXe.forEach(function(tenTaiXe) {
-          themVaoDanhSach("danhSachTenTaiXe", tenTaiXe);
-        });
-        capNhatSelectOptions("danhSachTenTaiXe"); 
-      }
-      reader.readAsText(file);
-    }
-  });
-
-  // Xử lý sự kiện nhập file dữ liệu chuyến xe
-  document.getElementById('inputFileDuLieu').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (file) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var duLieu = JSON.parse(e.target.result);
-        duLieu.forEach(function(item) {
-          // Tạo key duy nhất cho mỗi chuyến xe
-          var key = "chuyenxe_" + item.ngayThang + item.bienSoXe + item.taiXe; 
-          localStorage.setItem(key, JSON.stringify(item));
-          themVaoDanhSach("danhSachBienSoXe", item.bienSoXe);
-          themVaoDanhSach("danhSachTenTaiXe", item.taiXe);
-        });
-        hienThiDanhSach();
-        capNhatThongKe(); 
-      }
-      reader.readAsText(file);
-    }
-  });
-
-  
-  hienThiDanhSach();
-  capNhatThongKe();
-  capNhatSelectOptions("danhSachBienSoXe"); 
-  capNhatSelectOptions("danhSachTenTaiXe"); 
-</script>
-</body>
 </html>
